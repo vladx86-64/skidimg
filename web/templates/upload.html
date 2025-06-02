@@ -1,0 +1,253 @@
+{{define "content"}}
+<!-- Cropper.js stylesheet -->
+<link href="https://cdn.jsdelivr.net/npm/cropperjs@1.5.13/dist/cropper.min.css" rel="stylesheet" />
+
+<div class="w-full max-w-2xl bg-gray-800 border border-gray-700 rounded-2xl shadow-xl p-8 text-center space-y-6">
+  <h1 class="text-3xl font-bold text-white">Upload your image</h1>
+
+  <!-- Dropzone Phase -->
+  <div id="dropzone-phase">
+    <p class="text-gray-400 mb-4">Drag & drop, choose from files, or paste from clipboard</p>
+    <div id="dropzone"
+      class="relative w-full h-64 bg-gray-900 border-2 border-dashed border-gray-700 rounded-xl flex items-center justify-center cursor-pointer hover:border-blue-500 transition">
+      <input type="file" id="image-input" class="hidden" accept="image/*" />
+      <button id="dropzone-click" class="absolute inset-0 w-full h-full z-10 focus:outline-none"></button>
+      <div class="z-20 flex flex-col items-center text-gray-500 pointer-events-none">
+        <svg class="w-10 h-10 mb-2" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" d="M7 16V4m0 0L4 7m3-3l3 3M17 8v12m0 0l-3-3m3 3l3-3" />
+        </svg>
+        <span>Drop image or click to browse</span>
+      </div>
+    </div>
+  </div>
+
+  <!-- Editor Phase -->
+  <div id="editor-phase" class="hidden space-y-4">
+    <div class="bg-black rounded overflow-hidden max-h-64">
+      <img id="cropper-img" class="max-w-full mx-auto">
+    </div>
+
+    <div class="text-sm text-gray-400">Crop size: <span id="crop-size"></span></div>
+
+    <div class="flex flex-wrap justify-center gap-4 items-center">
+      <span class="text-sm text-gray-300">Resize W:</span>
+      <input type="number" id="resize-width" class="w-20 p-1 rounded bg-gray-700 text-white border border-gray-600" />
+      <span class="text-sm text-gray-300">Resize H:</span>
+      <input type="number" id="resize-height" class="w-20 p-1 rounded bg-gray-700 text-white border border-gray-600" />
+      <label class="text-sm text-gray-300 flex items-center gap-2">
+        <input type="checkbox" id="keep-aspect" class="form-checkbox rounded text-blue-500"> Keep aspect ratio
+      </label>
+    </div>
+
+    <div class="flex justify-center gap-4">
+      <button id="back-to-dropzone"
+        class="bg-gray-600 hover:bg-gray-700 text-white px-4 py-2 rounded-lg font-medium transition">
+        ← Back
+      </button>
+      <button id="confirm-edit"
+        class="bg-green-600 hover:bg-green-700 text-white px-6 py-2 rounded-lg font-semibold shadow transition">
+        Confirm Crop
+      </button>
+    </div>
+  </div>
+
+  <!-- Final Preview Phase -->
+  <div id="preview-phase" class="hidden space-y-4">
+    <div class="flex justify-center">
+      <img id="final-preview" class="max-h-64 rounded border border-gray-700" />
+    </div>
+    <form id="upload-form" enctype="multipart/form-data">
+      <input type="file" id="image-hidden" name="image" class="hidden" />
+      <div class="flex justify-center gap-4 mt-4">
+        <button id="back-to-editor"
+          type="button" class="bg-gray-600 hover:bg-gray-700 text-white px-4 py-2 rounded-lg font-medium transition">
+          ← Back
+        </button>
+        <button type="submit"
+          class="bg-blue-600 hover:bg-blue-700 text-white font-semibold py-2 px-4 rounded-lg shadow transition">
+          Upload Image
+        </button>
+      </div>
+    </form>
+  </div>
+
+  <!-- Link-Only Final Phase -->
+  <div id="link-phase" class="hidden text-center space-y-4">
+    <h2 class="text-2xl font-bold text-white">✅ Image Uploaded</h2>
+    <div class="relative max-w-xl mx-auto">
+      <input
+        type="text"
+        id="final-link"
+        class="w-full p-3 pr-24 text-green-400 bg-gray-900 border border-gray-700 rounded-lg font-mono"
+        readonly
+        onclick="this.select()"
+      />
+      <button
+  onclick="copyFinalLink(event)"
+  class="absolute top-1/2 right-2 -translate-y-1/2 px-3 py-1.5 bg-gray-700 hover:bg-gray-600 text-white text-sm rounded-lg shadow-md transition-all"
+>
+  Copy
+</button>
+
+    </div>
+    <p class="text-sm text-gray-400">You can now share this link!</p>
+  </div>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/cropperjs@1.5.13/dist/cropper.min.js"></script>
+<script>
+  let cropper;
+  const dropzonePhase = document.getElementById("dropzone-phase");
+  const editorPhase = document.getElementById("editor-phase");
+  const previewPhase = document.getElementById("preview-phase");
+  const linkPhase = document.getElementById("link-phase");
+  const clickOverlay = document.getElementById("dropzone-click");
+  const fileInput = document.getElementById("image-input");
+  const formInput = document.getElementById("image-hidden");
+  const cropperImg = document.getElementById("cropper-img");
+  const finalPreview = document.getElementById("final-preview");
+  const confirmBtn = document.getElementById("confirm-edit");
+  const resizeWidth = document.getElementById("resize-width");
+  const resizeHeight = document.getElementById("resize-height");
+  const keepAspect = document.getElementById("keep-aspect");
+  const cropSizeText = document.getElementById("crop-size");
+  const backToDropzone = document.getElementById("back-to-dropzone");
+  const backToEditor = document.getElementById("back-to-editor");
+  const uploadForm = document.getElementById("upload-form");
+  const finalLinkInput = document.getElementById("final-link");
+
+  let currentAspectRatio;
+
+  function updateCropSizeText(data) {
+    cropSizeText.textContent = `${Math.round(data.width)} x ${Math.round(data.height)}`;
+    resizeWidth.value = Math.round(data.width);
+    resizeHeight.value = Math.round(data.height);
+    currentAspectRatio = data.width / data.height;
+  }
+
+  function initCropper(file) {
+    const reader = new FileReader();
+    reader.onload = (e) => {
+      cropperImg.src = e.target.result;
+      dropzonePhase.classList.add("hidden");
+      editorPhase.classList.remove("hidden");
+
+      cropperImg.onload = () => {
+        cropper?.destroy();
+        cropper = new Cropper(cropperImg, {
+          aspectRatio: NaN,
+          viewMode: 1,
+          autoCropArea: 1,
+          crop(event) {
+            updateCropSizeText({ width: event.detail.width, height: event.detail.height });
+          }
+        });
+      };
+    };
+    reader.readAsDataURL(file);
+  }
+
+  resizeWidth.addEventListener("input", () => {
+    if (!keepAspect.checked) return;
+    let width = parseInt(resizeWidth.value) || 0;
+    if (currentAspectRatio) {
+      let height = width / currentAspectRatio;
+      resizeHeight.value = Math.round(height);
+    }
+  });
+
+  resizeHeight.addEventListener("input", () => {
+    if (!keepAspect.checked) return;
+    let height = parseInt(resizeHeight.value) || 0;
+    if (currentAspectRatio) {
+      let width = height * currentAspectRatio;
+      resizeWidth.value = Math.round(width);
+    }
+  });
+
+  confirmBtn.addEventListener("click", () => {
+    if (!cropper) return;
+    const width = parseInt(resizeWidth.value) || undefined;
+    const height = parseInt(resizeHeight.value) || undefined;
+    const canvas = cropper.getCroppedCanvas({ width, height });
+    canvas.toBlob((blob) => {
+      const file = new File([blob], "cropped.png", { type: "image/png" });
+      const dataTransfer = new DataTransfer();
+      dataTransfer.items.add(file);
+      formInput.files = dataTransfer.files;
+      finalPreview.src = URL.createObjectURL(file);
+      editorPhase.classList.add("hidden");
+      previewPhase.classList.remove("hidden");
+    });
+  });
+
+  clickOverlay.addEventListener("click", () => fileInput.click());
+  fileInput.addEventListener("change", () => {
+    if (fileInput.files.length) initCropper(fileInput.files[0]);
+  });
+  document.addEventListener("paste", (event) => {
+    const items = event.clipboardData.items;
+    for (const item of items) {
+      if (item.type.startsWith("image/")) {
+        const file = item.getAsFile();
+        initCropper(file);
+      }
+    }
+  });
+
+  backToDropzone.addEventListener("click", () => {
+    cropper?.destroy();
+    cropperImg.src = "";
+    fileInput.value = "";
+    dropzonePhase.classList.remove("hidden");
+    editorPhase.classList.add("hidden");
+  });
+
+  backToEditor.addEventListener("click", (e) => {
+    e.preventDefault();
+    previewPhase.classList.add("hidden");
+    editorPhase.classList.remove("hidden");
+  });
+
+  uploadForm.addEventListener("submit", async (e) => {
+    e.preventDefault();
+
+    const formData = new FormData(uploadForm);
+    try {
+      const response = await fetch("/upload", {
+        method: "POST",
+        body: formData,
+      });
+
+      if (!response.ok) {
+       const errorText = await response.text(); // read body of 4xx/5xx error
+  console.error("Upload failed:", errorText);
+  alert("Upload failed:\n" + errorText);
+  return;
+      }
+
+      const url = await response.text();
+      const fullUrl = `${window.location.origin}${url}`;
+      finalLinkInput.value = fullUrl;
+
+      // Hide all, show link-only final phase
+      dropzonePhase.classList.add("hidden");
+      editorPhase.classList.add("hidden");
+      previewPhase.classList.add("hidden");
+      linkPhase.classList.remove("hidden");
+    } catch (err) {
+      alert("Upload error. ");
+      console.log("error ", err)
+    }
+  });
+
+  function copyFinalLink(event) {
+    finalLinkInput.select();
+    document.execCommand("copy");
+
+    const original = event.target.innerText;
+    event.target.innerText = "Copied!";
+    setTimeout(() => event.target.innerText = original, 1500);
+  }
+</script>
+{{end}}
