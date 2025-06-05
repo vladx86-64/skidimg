@@ -39,15 +39,25 @@ func RegisterRoutes(handler *handler) *chi.Mux {
 		})
 	})
 
-	r.Get("/upload", handler.renderUploadPage)
-	r.Post("/upload", handler.uploadImage)
+	r.Group(func(r chi.Router) {
+		r.Use(InjectOptionalClaims(tokenMaker)) // ✅ мягкая мидлвара
+		r.Get("/upload", handler.renderUploadPage)
+		r.Post("/upload", handler.uploadImage)
+	})
 
 	r.Handle("/uploads/*", http.StripPrefix("/uploads/", http.FileServer(http.Dir("./uploads"))))
 
 	r.Get("/gallery/{id}", handler.viewImage)
 
 	r.Get("/login", handler.RenderLoginPage)
+	r.Post("/login", handler.handleLogin)
 	r.Get("/register", handler.RenderRegisterPage)
+	r.Post("/register", handler.handleRegister)
+
+	r.Group(func(r chi.Router) {
+		r.Use(GetAuthMiddlewareFUnc(tokenMaker))
+		r.Get("/gallery", handler.handleGalleryPage)
+	})
 
 	return r
 }

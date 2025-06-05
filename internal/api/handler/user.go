@@ -291,3 +291,119 @@ func (h *handler) RenderRegisterPage(w http.ResponseWriter, r *http.Request) {
 	}
 	tmpl.ExecuteTemplate(w, "layout", nil)
 }
+
+func (h *handler) handleRegister(w http.ResponseWriter, r *http.Request) {
+	if err := r.ParseForm(); err != nil {
+		http.Error(w, "Bad form data", http.StatusBadRequest)
+		return
+	}
+
+	name := r.FormValue("name")
+	email := r.FormValue("email")
+	password := r.FormValue("password")
+
+	if name == "" || email == "" || password == "" {
+		http.Error(w, "Missing fields", http.StatusBadRequest)
+		return
+	}
+
+	hashed, err := security.HashPassword(password)
+	if err != nil {
+		http.Error(w, "Error hashing password", http.StatusInternalServerError)
+		return
+	}
+
+	u := model.UserReq{
+		Name:     name,
+		Email:    email,
+		Password: hashed,
+		IsAdmin:  false,
+	}
+
+	_, err = h.server.CreateUser(h.ctx, u.ToStorage())
+	if err != nil {
+		http.Error(w, fmt.Sprintf("Error creating user: %v", err), http.StatusInternalServerError)
+		return
+	}
+
+	// 🎯 Просто редиректим на страницу логина
+	http.Redirect(w, r, "/login", http.StatusSeeOther)
+}
+
+func (h *handler) handleLogin(w http.ResponseWriter, r *http.Request) {
+	if err := r.ParseForm(); err != nil {
+		http.Error(w, "Bad form data", http.StatusBadRequest)
+		return
+	}
+
+	email := r.FormValue("email")
+	password := r.FormValue("password")
+
+	if email == "" || password == "" {
+		http.Error(w, "Missing fields", http.StatusBadRequest)
+		return
+	}
+
+	// Получаем пользователя
+	gu, err := h.server.GetUser(h.ctx, email)
+	if err != nil {
+		http.Error(w, "Invalid email or password", http.StatusUnauthorized)
+		return
+	}
+
+	// Проверяем пароль
+	if err := security.CheckPassword(password, gu.Password); err != nil {
+		http.Error(w, "Invalid email or password", http.StatusUnauthorized)
+		return
+	}
+
+	// Генерируем токены
+	accessToken, accessClaims, err := h.TokenMaker.CreateToken(gu.ID, gu.Email, gu.IsAdmin, time.Minute*15)
+	if err != nil {
+		http.Error(w, "Error creating token", http.StatusInternalServerError)
+		return
+	}
+
+	refreshToken, refreshClaims, err := h.TokenMaker.CreateToken(gu.ID, gu.Email, gu.IsAdmin, time.Hour*24)
+	if err != nil {
+		http.Error(w, "Error creating refresh token", http.StatusInternalServerError)
+		return
+	}
+
+	// Сохраняем сессию
+	// ❗ используем строковый ID из RegisteredClaims
+	_, err = h.server.CreateSession(h.ctx, &model.Session{
+		ID:           refreshClaims.RegisteredClaims.ID, // ✅ string
+		UserEmail:    gu.Email,
+		RefreshToken: refreshToken,
+		IsRevoked:    false,
+		ExpiresAt:    refreshClaims.ExpiresAt.Time,
+	})
+
+	if err != nil {
+		http.Error(w, "Error creating session", http.StatusInternalServerError)
+		return
+	}
+
+	// Ставим access токен в cookie
+	http.SetCookie(w, &http.Cookie{
+		Name:     "access_token",
+		Value:    accessToken,
+		HttpOnly: true,
+		Path:     "/",
+		Expires:  accessClaims.ExpiresAt.Time,
+	})
+
+	// По желанию — refresh токен в отдельную cookie
+	http.SetCookie(w, &http.Cookie{
+		Name:     "refresh_token",
+		Value:    refreshToken,
+		HttpOnly: true,                    // ❗ запрет JS-доступа
+		Secure:   true,                    // ❗ только через HTTPS
+		Path:     "/auth/refresh",         // ❗ ограничиваем маршрут
+		SameSite: http.SameSiteStrictMode, // ❗ защита от CSRF
+		Expires:  refreshClaims.ExpiresAt.Time,
+	})
+
+	http.Redirect(w, r, "/gallery", http.StatusSeeOther)
+}

@@ -35,3 +35,13 @@ func (s *Storage) GetImageByFilename(ctx context.Context, name string) (*model.I
 	}
 	return &img, nil
 }
+
+func (s *Storage) GetUserGalary(ctx context.Context, u_id int64) ([]model.Image, error) {
+	var images []model.Image
+	query := `SELECT * FROM images WHERE user_id=$1`
+	err := s.db.SelectContext(ctx, &images, query, u_id)
+	if err != nil {
+		return nil, err
+	}
+	return images, nil
+}

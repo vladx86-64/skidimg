@@ -158,3 +158,24 @@ func (h *handler) viewImage(w http.ResponseWriter, r *http.Request) {
 	tmpl.ExecuteTemplate(w, "layout", data)
 
 }
+
+func (h *handler) handleGalleryPage(w http.ResponseWriter, r *http.Request) {
+	claims := r.Context().Value(authKey{}).(*token.UserClaims)
+
+	images, err := h.server.GetUserGalary(h.ctx, claims.ID)
+	if err != nil {
+		http.Error(w, fmt.Sprintf("Error loading gallery %v", err), http.StatusInternalServerError)
+		return
+	}
+
+	tmpl, err := template.ParseFiles("web/templates/layout.html", "web/templates/gallery.html")
+	if err != nil {
+		http.Error(w, "Template parsing error", http.StatusInternalServerError)
+		return
+	}
+
+	err = tmpl.ExecuteTemplate(w, "layout", images)
+	if err != nil {
+		http.Error(w, "Template execution error", http.StatusInternalServerError)
+	}
+}

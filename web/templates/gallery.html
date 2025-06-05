@@ -1,0 +1,19 @@
+{{define "content"}}
+<h1 class="text-3xl font-bold mb-6">Your Gallery</h1>
+<div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4">
+    {{range .}}
+    <div class="bg-gray-800 rounded-lg overflow-hidden shadow-md">
+        <a href="/gallery/{{.Filename}}">
+            <img src="/uploads/optimized/{{.Filename}}.webp" alt="Image"
+                class="w-full h-48 object-cover hover:opacity-80 transition">
+        </a>
+
+        <div class="p-4 text-sm text-gray-400">
+            Uploaded: {{.CreatedAt.Format "02 Jan 2006 15:04"}}
+        </div>
+    </div>
+    {{else}}
+    <p class="col-span-full text-gray-400">You haven't uploaded anything yet.</p>
+    {{end}}
+</div>
+{{end}}
