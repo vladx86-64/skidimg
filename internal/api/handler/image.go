@@ -38,7 +38,8 @@ func (h *handler) renderUploadPage(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, "Template error", http.StatusInternalServerError)
 		return
 	}
-	tmpl.ExecuteTemplate(w, "layout", nil)
+	layoutData := r.Context().Value(layoutKey{}).(LayoutTemplateData)
+	tmpl.ExecuteTemplate(w, "layout", layoutData)
 }
 
 func (h *handler) uploadImage(w http.ResponseWriter, r *http.Request) {
@@ -173,9 +174,23 @@ func (h *handler) handleGalleryPage(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, "Template parsing error", http.StatusInternalServerError)
 		return
 	}
+	layoutData := r.Context().Value(layoutKey{}).(LayoutTemplateData)
+	layoutData.Content = images
 
-	err = tmpl.ExecuteTemplate(w, "layout", images)
+	err = tmpl.ExecuteTemplate(w, "layout", layoutData)
 	if err != nil {
 		http.Error(w, "Template execution error", http.StatusInternalServerError)
 	}
+}
+
+func (h *handler) renderProfilePage(w http.ResponseWriter, r *http.Request) {
+
+	tmpl, err := template.ParseFiles("web/templates/layout.html", "web/templates/profile.html")
+	if err != nil {
+		http.Error(w, "Template error", http.StatusInternalServerError)
+		return
+	}
+	layoutData := r.Context().Value(layoutKey{}).(LayoutTemplateData)
+	tmpl.ExecuteTemplate(w, "layout", layoutData)
+
 }

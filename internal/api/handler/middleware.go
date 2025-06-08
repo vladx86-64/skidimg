@@ -9,6 +9,13 @@ import (
 )
 
 type authKey struct{}
+type layoutKey struct{}
+
+type LayoutTemplateData struct {
+	IsAuthenticated bool
+	Username        string
+	Content         any
+}
 
 func GetAuthMiddlewareFUnc(tokenMaker *token.JWTMaker) func(http.Handler) http.Handler {
 	return func(next http.Handler) http.Handler {
@@ -68,26 +75,6 @@ func GetAdminMiddlewareFunc(tokenMaker *token.JWTMaker) func(http.Handler) http.
 	}
 }
 
-// func verifyClaimFromAutheader(r *http.Request, tokenMaker *token.JWTMaker) (*token.UserClaims, error) {
-// 	authHeader := r.Header.Get("Authorization")
-// 	if authHeader == "" {
-// 		return nil, fmt.Errorf("auth header missing")
-// 	}
-
-// 	fields := strings.Fields(authHeader)
-// 	if len(fields) != 2 || fields[0] != "Bearer" {
-// 		return nil, fmt.Errorf("invalis auth header")
-// 	}
-
-// 	token := fields[1]
-// 	claims, err := tokenMaker.VerifyToken(token)
-// 	if err != nil {
-// 		return nil, fmt.Errorf("invalid token %w", err)
-// 	}
-
-// 	return claims, nil
-// }
-
 func verifyClaimFromAutheader(r *http.Request, tokenMaker *token.JWTMaker) (*token.UserClaims, error) {
 	authHeader := r.Header.Get("Authorization")
 
@@ -107,3 +94,38 @@ func verifyClaimFromAutheader(r *http.Request, tokenMaker *token.JWTMaker) (*tok
 
 	return nil, fmt.Errorf("missing token in header and cookie")
 }
+
+func InjectLayoutTemplateData() func(http.Handler) http.Handler {
+	return func(next http.Handler) http.Handler {
+		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+			var layoutData LayoutTemplateData
+
+			if val := r.Context().Value(authKey{}); val != nil {
+				layoutData.IsAuthenticated = true
+			}
+
+			ctx := context.WithValue(r.Context(), layoutKey{}, layoutData)
+			next.ServeHTTP(w, r.WithContext(ctx))
+		})
+	}
+}
+
+// func verifyClaimFromAutheader(r *http.Request, tokenMaker *token.JWTMaker) (*token.UserClaims, error) {
+// 	authHeader := r.Header.Get("Authorization")
+// 	if authHeader == "" {
+// 		return nil, fmt.Errorf("auth header missing")
+// 	}
+
+// 	fields := strings.Fields(authHeader)
+// 	if len(fields) != 2 || fields[0] != "Bearer" {
+// 		return nil, fmt.Errorf("invalis auth header")
+// 	}
+
+// 	token := fields[1]
+// 	claims, err := tokenMaker.VerifyToken(token)
+// 	if err != nil {
+// 		return nil, fmt.Errorf("invalid token %w", err)
+// 	}
+
+// 	return claims, nil
+// }

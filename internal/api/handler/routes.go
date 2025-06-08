@@ -40,7 +40,8 @@ func RegisterRoutes(handler *handler) *chi.Mux {
 	})
 
 	r.Group(func(r chi.Router) {
-		r.Use(InjectOptionalClaims(tokenMaker)) // ✅ мягкая мидлвара
+		r.Use(InjectOptionalClaims(tokenMaker))
+		r.Use(InjectLayoutTemplateData())
 		r.Get("/upload", handler.renderUploadPage)
 		r.Post("/upload", handler.uploadImage)
 	})
@@ -49,14 +50,27 @@ func RegisterRoutes(handler *handler) *chi.Mux {
 
 	r.Get("/gallery/{id}", handler.viewImage)
 
-	r.Get("/login", handler.RenderLoginPage)
 	r.Post("/login", handler.handleLogin)
-	r.Get("/register", handler.RenderRegisterPage)
 	r.Post("/register", handler.handleRegister)
 
 	r.Group(func(r chi.Router) {
+
 		r.Use(GetAuthMiddlewareFUnc(tokenMaker))
+		r.Use(InjectLayoutTemplateData())
 		r.Get("/gallery", handler.handleGalleryPage)
+	})
+
+	r.Group(func(r chi.Router) {
+
+		r.Use(InjectLayoutTemplateData())
+		r.Get("/register", handler.RenderRegisterPage)
+		r.Get("/login", handler.RenderLoginPage)
+	})
+
+	r.Group(func(r chi.Router) {
+		r.Use(GetAuthMiddlewareFUnc(tokenMaker))
+		r.Use(InjectLayoutTemplateData()) // ← добавь ЭТО
+		r.Get("/profile", handler.renderProfilePage)
 	})
 
 	return r
