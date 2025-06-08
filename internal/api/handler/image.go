@@ -150,13 +150,24 @@ func (h *handler) viewImage(w http.ResponseWriter, r *http.Request) {
 	}
 
 	origPath := fmt.Sprintf("/uploads/original/%s%s", img.Filename, img.Ext)
-	data := struct {
+	layoutData := r.Context().Value(layoutKey{}).(LayoutTemplateData)
+
+	layoutData.Content = struct {
 		ImagePath string
 	}{
 		ImagePath: origPath,
 	}
 
-	tmpl.ExecuteTemplate(w, "layout", data)
+	// data := struct {
+	// 	ImagePath string
+	// }{
+	// 	ImagePath: origPath,
+	// }
+
+	err = tmpl.ExecuteTemplate(w, "layout", layoutData)
+	if err != nil {
+		http.Error(w, "Template execution error", http.StatusInternalServerError)
+	}
 
 }
 

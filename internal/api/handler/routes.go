@@ -48,7 +48,11 @@ func RegisterRoutes(handler *handler) *chi.Mux {
 
 	r.Handle("/uploads/*", http.StripPrefix("/uploads/", http.FileServer(http.Dir("./uploads"))))
 
-	r.Get("/gallery/{id}", handler.viewImage)
+	r.Group(func(r chi.Router) {
+		r.Use(InjectOptionalClaims(tokenMaker)) // чтобы не было 401 для гостей
+		r.Use(InjectLayoutTemplateData())
+		r.Get("/gallery/{id}", handler.viewImage)
+	})
 
 	r.Post("/login", handler.handleLogin)
 	r.Post("/register", handler.handleRegister)
