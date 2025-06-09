@@ -73,8 +73,31 @@ func RegisterRoutes(handler *handler) *chi.Mux {
 
 	r.Group(func(r chi.Router) {
 		r.Use(GetAuthMiddlewareFUnc(tokenMaker))
-		r.Use(InjectLayoutTemplateData()) // ← добавь ЭТО
+		r.Use(InjectLayoutTemplateData())
 		r.Get("/profile", handler.renderProfilePage)
+	})
+
+	// r.Group(func(r chi.Router) {
+	// 	r.Use(GetAuthMiddlewareFUnc(tokenMaker))
+	// 	r.Use(InjectLayoutTemplateData())
+	// 	r.Get("/album", handler.renderAlbumPage)
+	// })
+
+	r.Route("/albums", func(r chi.Router) {
+		r.Use(GetAuthMiddlewareFUnc(tokenMaker))
+		r.Use(InjectLayoutTemplateData())
+
+		// /albums
+		r.Get("/", handler.renderUserAlbums)   // список
+		r.Post("/", handler.handleCreateAlbum) // создание
+
+		// /albums/{id}
+		r.Route("/{id}", func(r chi.Router) {
+			r.Get("/", handler.viewAlbum)            // просмотр альбома
+			r.Post("/add", handler.handleAddToAlbum) // добавление изображений
+
+			r.Post("/remove/{image_id}", handler.handleRemoveFromAlbum)
+		})
 	})
 
 	return r
