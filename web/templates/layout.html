@@ -4,7 +4,7 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Upload</title>
+  <title>logooo</title>
   <script src="https://cdn.tailwindcss.com"></script>
 </head>
 <body class="bg-gray-900 text-white min-h-screen flex flex-col">
@@ -29,6 +29,24 @@
   <main class="flex-grow flex flex-col items-center justify-center p-6">
     {{template "content" .Content}}
   </main>
+ <script>
+    async function fetchWithAuth(url, options = {}) {
+      const res = await fetch(url, options)
+
+      if (res.status === 401) {
+        const refreshRes = await fetch("/tokens/renew", { method: "POST" })
+
+        if (refreshRes.ok) {
+          return await fetch(url, options)
+        } else {
+          window.location.href = "/login"
+          return
+        }
+      }
+
+      return res
+    }
+  </script>
 </body>
 </html>
 {{end}}

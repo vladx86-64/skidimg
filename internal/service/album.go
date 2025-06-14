@@ -28,3 +28,7 @@ func (s *Server) GetUserImagesNotInAlbum(ctx context.Context, u_id, a_id int64) 
 func (s *Server) DeleteImageFromAlbum(ctx context.Context, a_id, i_id int64) error {
 	return s.storage.DeleteImageFromAlbum(ctx, a_id, i_id)
 }
+
+func (s *Server) DeleteAlbum(ctx context.Context, a_id int64) error {
+	return s.storage.DeleteAlbum(ctx, a_id)
+}

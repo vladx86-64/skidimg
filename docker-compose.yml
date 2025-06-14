@@ -1,0 +1,44 @@
+
+version: '3.8'
+
+services:
+  db:
+    image: postgres
+    container_name: skidimg-postgres
+    environment:
+      POSTGRES_PASSWORD: carln109
+      POSTGRES_DB: skidimg
+    ports:
+      - "5433:5432"
+    volumes:
+      - skidimg_db:/var/lib/postgresql/data
+
+  migrate:
+    image: migrate/migrate
+    container_name: skidimg-migrate
+    depends_on:
+      - db
+    volumes:
+      - ./db:/db
+    entrypoint:
+      [
+        "migrate",
+        "-path=/db/migrations",
+        "-database=postgres://postgres:carln109@db:5432/skidimg?sslmode=disable",
+        "up"
+      ]
+    restart: "on-failure"
+
+  app:
+    build: .
+    container_name: skidimg-container
+    ports:
+      - "1488:1488"
+    volumes:
+      - ./uploads:/app/uploads
+    depends_on:
+      - db
+    restart: unless-stopped
+
+volumes:
+  skidimg_db:

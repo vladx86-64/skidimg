@@ -11,17 +11,26 @@
 
   <div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4">
     {{range .}}
-    <div class="bg-gray-800 rounded-lg overflow-hidden shadow-md">
-      <a href="/albums/{{.ID}}">
-        <img src="/uploads/albums/preview/{{.ID}}.webp"
-             class="w-full h-48 object-cover hover:opacity-80 transition" />
-      </a>
-      <div class="p-4">
-        <h2 class="text-white font-semibold text-lg truncate">{{.Title}}</h2>
-        <p class="text-gray-400 text-sm mt-1 truncate">{{.Description}}</p>
-      </div>
-    </div>
-    {{else}}
+     
+<div class="relative group bg-gray-800 rounded-lg overflow-hidden shadow-md">
+  <a href="/albums/{{.ID}}">
+    <img src="/uploads/albums/preview/{{.ID}}.webp"
+         class="w-full h-48 object-cover hover:opacity-80 transition" />
+  </a>
+  <form method="POST" action="/albums/{{.ID}}/delete"
+        class="absolute top-2 right-2 opacity-0 group-hover:opacity-100 transition">
+    <button type="submit"
+            onclick="return confirm('Delete this album?')"
+            class="bg-red-600 hover:bg-red-500 text-white rounded-full p-2 shadow">
+      🗑️
+    </button>
+  </form>
+  <div class="p-4">
+    <h2 class="text-white font-semibold text-lg truncate">{{.Title}}</h2>
+    <p class="text-gray-400 text-sm mt-1 truncate">{{.Description}}</p>
+  </div>
+</div>
+	{{else}}
     <p class="col-span-full text-gray-400">You haven't created any albums yet.</p>
     {{end}}
   </div>

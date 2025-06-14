@@ -114,6 +114,15 @@ func (s *Storage) DeleteImageFromAlbum(ctx context.Context, albumID, imageID int
 	return nil
 }
 
+func (s *Storage) DeleteAlbum(ctx context.Context, albumID int64) error {
+	query := `DELETE FROM albums WHERE id = $1`
+	_, err := s.db.ExecContext(ctx, query, albumID)
+	if err != nil {
+		return fmt.Errorf("error deleting album: %w", err)
+	}
+	return nil
+}
+
 // func (s *Storage) DeleteAlbum(ctx context.Context, aid int64) error {
 //
 // }

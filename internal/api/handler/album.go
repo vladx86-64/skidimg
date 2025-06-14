@@ -212,3 +212,21 @@ func (h *handler) handleRemoveFromAlbum(w http.ResponseWriter, r *http.Request) 
 
 	http.Redirect(w, r, "/albums/"+albumIDStr, http.StatusSeeOther)
 }
+
+func (h *handler) handleDeleteAlbum(w http.ResponseWriter, r *http.Request) {
+	albumIDStr := chi.URLParam(r, "id")
+
+	albumID, err := strconv.ParseInt(albumIDStr, 10, 64)
+	if err != nil {
+		http.Error(w, "Invalid album ID", http.StatusBadRequest)
+		return
+	}
+
+	err = h.server.DeleteAlbum(h.ctx, albumID)
+	if err != nil {
+		http.Error(w, fmt.Sprintf("Failed to delete album: %v", err), http.StatusInternalServerError)
+		return
+	}
+
+	http.Redirect(w, r, "/albums", http.StatusSeeOther)
+}

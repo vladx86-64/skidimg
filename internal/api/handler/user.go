@@ -212,15 +212,15 @@ func (h *handler) logoutUser(w http.ResponseWriter, r *http.Request) {
 }
 
 func (h *handler) renewAccessToken(w http.ResponseWriter, r *http.Request) {
-	var req model.RenewAccessTokenReq
-	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
-		http.Error(w, "Bad request ", http.StatusBadRequest)
+	cookie, err := r.Cookie("refresh_token")
+	if err != nil || cookie.Value == "" {
+		http.Error(w, "Missing refresh token", http.StatusUnauthorized)
 		return
 	}
 
-	refreshClaims, err := h.TokenMaker.VerifyToken(req.RefreshToken)
+	refreshClaims, err := h.TokenMaker.VerifyToken(cookie.Value)
 	if err != nil {
-		http.Error(w, "Error verifying token", http.StatusUnauthorized)
+		http.Error(w, "Invalid refresh token", http.StatusUnauthorized)
 		return
 	}
 

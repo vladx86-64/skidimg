@@ -97,6 +97,7 @@ func RegisterRoutes(handler *handler) *chi.Mux {
 			r.Post("/add", handler.handleAddToAlbum) // добавление изображений
 
 			r.Post("/remove/{image_id}", handler.handleRemoveFromAlbum)
+			r.Post("/delete", handler.handleDeleteAlbum)
 		})
 	})
 
