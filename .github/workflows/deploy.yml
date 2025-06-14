@@ -25,6 +25,6 @@ jobs:
         ssh -i ~/.ssh/id_ed25519 deploy@${{ secrets.VPS_HOST }} << 'EOF'
           cd ~/skidimg
           git pull origin main
-          docker compose pull || true
-          docker compose up -d --build
+          docker-compose pull || true
+          docker-compose up -d --build
         EOF
