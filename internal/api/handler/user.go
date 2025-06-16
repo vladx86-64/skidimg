@@ -167,7 +167,7 @@ func (h *handler) loginUser(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	resfreshToken, refreshClaims, err := h.TokenMaker.CreateToken(gu.ID, gu.Email, gu.IsAdmin, time.Hour*24)
+	resfreshToken, refreshClaims, err := h.TokenMaker.CreateToken(gu.ID, gu.Email, gu.IsAdmin, time.Hour*24*30)
 	if err != nil {
 		http.Error(w, "Error creating token", http.StatusInternalServerError)
 		return
@@ -211,6 +211,51 @@ func (h *handler) logoutUser(w http.ResponseWriter, r *http.Request) {
 	w.WriteHeader(http.StatusNoContent)
 }
 
+// func (h *handler) renewAccessToken(w http.ResponseWriter, r *http.Request) {
+// 	cookie, err := r.Cookie("refresh_token")
+// 	if err != nil || cookie.Value == "" {
+// 		http.Error(w, "Missing refresh token", http.StatusUnauthorized)
+// 		return
+// 	}
+//
+// 	refreshClaims, err := h.TokenMaker.VerifyToken(cookie.Value)
+// 	if err != nil {
+// 		http.Error(w, "Invalid refresh token", http.StatusUnauthorized)
+// 		return
+// 	}
+//
+// 	session, err := h.server.GetSession(h.ctx, refreshClaims.RegisteredClaims.ID)
+// 	if err != nil {
+// 		http.Error(w, "Error getting session", http.StatusInternalServerError)
+// 		return
+// 	}
+//
+// 	if session.IsRevoked {
+// 		http.Error(w, "Session revoked", http.StatusUnauthorized)
+// 		return
+// 	}
+//
+// 	if session.UserEmail != refreshClaims.Email {
+// 		http.Error(w, "invalid session", http.StatusUnauthorized)
+// 		return
+// 	}
+//
+// 	accessToken, accessClaims, err := h.TokenMaker.CreateToken(refreshClaims.ID, refreshClaims.Email, refreshClaims.IsAdmin, time.Minute*15)
+// 	if err != nil {
+// 		http.Error(w, "error creating token", http.StatusInternalServerError)
+// 		return
+// 	}
+//
+// 	res := model.RenewAccessTokenRes{
+// 		AccessToken:          accessToken,
+// 		AccessTokenExpiresAt: accessClaims.ExpiresAt.Time,
+// 	}
+//
+// 	w.Header().Set("Content-Type", "application/json") // Устанавливаем заголовок
+// 	w.WriteHeader(http.StatusOK)                       // отпарвляем статус
+// 	json.NewEncoder(w).Encode(res)
+// }
+
 func (h *handler) renewAccessToken(w http.ResponseWriter, r *http.Request) {
 	cookie, err := r.Cookie("refresh_token")
 	if err != nil || cookie.Value == "" {
@@ -230,30 +275,29 @@ func (h *handler) renewAccessToken(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	if session.IsRevoked {
-		http.Error(w, "Session revoked", http.StatusUnauthorized)
-		return
-	}
-
-	if session.UserEmail != refreshClaims.Email {
-		http.Error(w, "invalid session", http.StatusUnauthorized)
+	if session.IsRevoked || session.UserEmail != refreshClaims.Email {
+		http.Error(w, "Invalid session", http.StatusUnauthorized)
 		return
 	}
 
 	accessToken, accessClaims, err := h.TokenMaker.CreateToken(refreshClaims.ID, refreshClaims.Email, refreshClaims.IsAdmin, time.Minute*15)
 	if err != nil {
-		http.Error(w, "error creating token", http.StatusInternalServerError)
+		http.Error(w, "Error creating token", http.StatusInternalServerError)
 		return
 	}
 
-	res := model.RenewAccessTokenRes{
-		AccessToken:          accessToken,
-		AccessTokenExpiresAt: accessClaims.ExpiresAt.Time,
-	}
+	// 🎯 ВАЖНО: обновляем куку
+	http.SetCookie(w, &http.Cookie{
+		Name:     "access_token",
+		Value:    accessToken,
+		HttpOnly: true,
+		Path:     "/",
+		SameSite: http.SameSiteLaxMode,
+		Expires:  accessClaims.ExpiresAt.Time,
+	})
 
-	w.Header().Set("Content-Type", "application/json") // Устанавливаем заголовок
-	w.WriteHeader(http.StatusOK)                       // отпарвляем статус
-	json.NewEncoder(w).Encode(res)
+	// Можно ничего не возвращать — только статус
+	w.WriteHeader(http.StatusNoContent)
 }
 
 func (h *handler) revokeSession(w http.ResponseWriter, r *http.Request) {
@@ -277,7 +321,10 @@ func (h *handler) RenderLoginPage(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, "Template error", http.StatusInternalServerError)
 		return
 	}
-	tmpl.ExecuteTemplate(w, "layout", nil)
+	layoutData := r.Context().Value(layoutKey{}).(LayoutTemplateData)
+	layoutData.Title = "SkidIMG - Login"
+
+	tmpl.ExecuteTemplate(w, "layout", layoutData)
 }
 
 func (h *handler) RenderRegisterPage(w http.ResponseWriter, r *http.Request) {
@@ -289,7 +336,11 @@ func (h *handler) RenderRegisterPage(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, "Template error", http.StatusInternalServerError)
 		return
 	}
-	tmpl.ExecuteTemplate(w, "layout", nil)
+
+	layoutData := r.Context().Value(layoutKey{}).(LayoutTemplateData)
+	layoutData.Title = "SkidIMG - Register"
+
+	tmpl.ExecuteTemplate(w, "layout", layoutData)
 }
 
 func (h *handler) handleRegister(w http.ResponseWriter, r *http.Request) {
@@ -331,6 +382,7 @@ func (h *handler) handleRegister(w http.ResponseWriter, r *http.Request) {
 }
 
 func (h *handler) handleLogin(w http.ResponseWriter, r *http.Request) {
+
 	if err := r.ParseForm(); err != nil {
 		http.Error(w, "Bad form data", http.StatusBadRequest)
 		return
@@ -364,7 +416,7 @@ func (h *handler) handleLogin(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	refreshToken, refreshClaims, err := h.TokenMaker.CreateToken(gu.ID, gu.Email, gu.IsAdmin, time.Hour*24)
+	refreshToken, refreshClaims, err := h.TokenMaker.CreateToken(gu.ID, gu.Email, gu.IsAdmin, time.Hour*24*30)
 	if err != nil {
 		http.Error(w, "Error creating refresh token", http.StatusInternalServerError)
 		return
@@ -390,20 +442,50 @@ func (h *handler) handleLogin(w http.ResponseWriter, r *http.Request) {
 		Name:     "access_token",
 		Value:    accessToken,
 		HttpOnly: true,
-		Path:     "/",
+		// Secure:   true,                 // если на HTTPS, иначе можно убрать на локалке
+		Path:     "/",                  // доступно для всех роутов
+		SameSite: http.SameSiteLaxMode, // или Strict
 		Expires:  accessClaims.ExpiresAt.Time,
 	})
 
 	// По желанию — refresh токен в отдельную cookie
+
 	http.SetCookie(w, &http.Cookie{
 		Name:     "refresh_token",
 		Value:    refreshToken,
-		HttpOnly: true,                    // ❗ запрет JS-доступа
-		Secure:   true,                    // ❗ только через HTTPS
-		Path:     "/auth/refresh",         // ❗ ограничиваем маршрут
-		SameSite: http.SameSiteStrictMode, // ❗ защита от CSRF
-		Expires:  refreshClaims.ExpiresAt.Time,
+		HttpOnly: true,
+		Path:     "/",                  // ✅ именно сюда ты стучишься
+		SameSite: http.SameSiteLaxMode, // ✅ так тоже норм на http
+		// Secure: true,                    // ❌ отключи на локалке
+		Expires: refreshClaims.ExpiresAt.Time,
 	})
 
+	// http.Redirect(w, r, "/gallery", http.StatusSeeOther)
+	// w.WriteHeader(http.StatusOK)
+
 	http.Redirect(w, r, "/gallery", http.StatusSeeOther)
+}
+
+func (h *handler) renderTermsPage(w http.ResponseWriter, r *http.Request) {
+	tmpl, err := template.ParseFiles("web/templates/layout.html", "web/templates/terms.html")
+	if err != nil {
+		http.Error(w, "Template error", http.StatusInternalServerError)
+		return
+	}
+	layoutData := r.Context().Value(layoutKey{}).(LayoutTemplateData)
+	layoutData.Title = "SkidIMG - T&C"
+
+	tmpl.ExecuteTemplate(w, "layout", layoutData)
+}
+func (h *handler) renderFAQPage(w http.ResponseWriter, r *http.Request) {
+	tmpl, err := template.ParseFiles("web/templates/layout.html", "web/templates/faq.html")
+	if err != nil {
+		http.Error(w, "Template error", http.StatusInternalServerError)
+		return
+	}
+	layoutData := r.Context().Value(layoutKey{}).(LayoutTemplateData)
+
+	layoutData.Title = "SkidIMG - FAQ"
+
+	tmpl.ExecuteTemplate(w, "layout", layoutData)
 }

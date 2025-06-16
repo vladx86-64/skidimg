@@ -1,19 +1,21 @@
 {{define "content"}}
 <div class="w-full max-w-md bg-gray-800 border border-gray-700 rounded-2xl shadow-xl p-8 text-center space-y-6">
-  <h1 class="text-3xl font-bold text-white">Login to your account</h1>
-  <form action="/login" method="POST" class="space-y-4">
-    <input type="email" name="email" placeholder="Email"
-      class="w-full p-3 rounded bg-gray-900 border border-gray-700 text-white focus:outline-none focus:ring-2 focus:ring-blue-600" required>
-    <input type="password" name="password" placeholder="Password"
-      class="w-full p-3 rounded bg-gray-900 border border-gray-700 text-white focus:outline-none focus:ring-2 focus:ring-blue-600" required>
-    <button type="submit"
-      class="w-full bg-blue-600 hover:bg-blue-700 text-white font-semibold py-2 px-4 rounded-lg shadow transition">
-      Login
-    </button>
-  </form>
-  <p class="text-gray-400 text-sm">
-    Don't have an account?
-    <a href="/register" class="text-blue-400 hover:underline">Register</a>
-  </p>
+	<h1 class="text-3xl font-bold text-white">Login to your account</h1>
+	<form action="/login" method="POST" class="space-y-4">
+		<input type="email" name="email" placeholder="Email"
+			class="w-full p-3 rounded bg-gray-900 border border-gray-700 text-white focus:outline-none focus:ring-2 focus:ring-blue-600"
+			required>
+		<input type="password" name="password" placeholder="Password"
+			class="w-full p-3 rounded bg-gray-900 border border-gray-700 text-white focus:outline-none focus:ring-2 focus:ring-blue-600"
+			required>
+		<button type="submit"
+			class="w-full bg-blue-600 hover:bg-blue-700 text-white font-semibold py-2 px-4 rounded-lg shadow transition">
+			Login
+		</button>
+	</form>
+	<p class="text-gray-400 text-sm">
+		Don't have an account?
+		<a href="/register" class="text-blue-400 hover:underline">Register</a>
+	</p>
 </div>
 {{end}}

@@ -21,6 +21,7 @@ func (h *handler) renderAlbumPage(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	layoutData := r.Context().Value(layoutKey{}).(LayoutTemplateData)
+
 	tmpl.ExecuteTemplate(w, "layout", layoutData)
 }
 
@@ -41,6 +42,7 @@ func (h *handler) renderUserAlbums(w http.ResponseWriter, r *http.Request) {
 
 	layoutData := r.Context().Value(layoutKey{}).(LayoutTemplateData)
 	layoutData.Content = albums
+	layoutData.Title = "Your Albums"
 
 	tmpl.ExecuteTemplate(w, "layout", layoutData)
 }
@@ -141,6 +143,7 @@ func (h *handler) viewAlbum(w http.ResponseWriter, r *http.Request) {
 
 	layoutData := r.Context().Value(layoutKey{}).(LayoutTemplateData)
 	layoutData.Content = data
+	layoutData.Title = "Albums Images"
 
 	tmpl.ExecuteTemplate(w, "layout", layoutData)
 }

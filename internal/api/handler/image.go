@@ -39,6 +39,7 @@ func (h *handler) renderUploadPage(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	layoutData := r.Context().Value(layoutKey{}).(LayoutTemplateData)
+	layoutData.Title = "Upload Image"
 	tmpl.ExecuteTemplate(w, "layout", layoutData)
 }
 
@@ -157,6 +158,7 @@ func (h *handler) viewImage(w http.ResponseWriter, r *http.Request) {
 	}{
 		ImagePath: origPath,
 	}
+	layoutData.Title = "View Image"
 
 	// data := struct {
 	// 	ImagePath string
@@ -187,6 +189,7 @@ func (h *handler) handleGalleryPage(w http.ResponseWriter, r *http.Request) {
 	}
 	layoutData := r.Context().Value(layoutKey{}).(LayoutTemplateData)
 	layoutData.Content = images
+	layoutData.Title = "Your Gallery"
 
 	err = tmpl.ExecuteTemplate(w, "layout", layoutData)
 	if err != nil {
@@ -202,6 +205,8 @@ func (h *handler) renderProfilePage(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	layoutData := r.Context().Value(layoutKey{}).(LayoutTemplateData)
+	layoutData.Title = "Your Profile"
+
 	tmpl.ExecuteTemplate(w, "layout", layoutData)
 
 }

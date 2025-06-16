@@ -1,57 +1,59 @@
-
 {{define "content"}}
 <div class="w-full max-w-6xl mx-auto">
-  <div class="flex justify-between items-center mb-6">
-    <h1 class="text-3xl font-bold text-white">Album: {{.Album.Title}}</h1>
-    <p class="text-gray-400">{{.Album.Description}}</p>
-  </div>
+	<div class="flex justify-between items-center mb-6">
+		<h1 class="text-3xl font-bold text-white">Album: {{.Album.Title}}</h1>
+		<p class="text-gray-400">{{.Album.Description}}</p>
+	</div>
 
-  <div class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-4">
-    <!-- Кнопка "Добавить изображения" -->
-    <button onclick="document.getElementById('addToAlbumModal').classList.remove('hidden')"
-            class="flex items-center justify-center bg-gray-800 rounded-lg text-white text-4xl font-bold hover:bg-gray-700 transition h-48">
-      ➕
-    </button>
+	<div class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-4">
+		<!-- Кнопка "Добавить изображения" -->
+		<button onclick="document.getElementById('addToAlbumModal').classList.remove('hidden')"
+			class="flex items-center justify-center bg-gray-800 rounded-lg text-white text-4xl font-bold hover:bg-gray-700 transition h-48">
+			➕
+		</button>
 
-	
-{{range .Images}}
-<div class="relative group bg-gray-800 rounded-lg overflow-hidden shadow-md">
-  <img src="/uploads/optimized/{{.Filename}}.webp"
-       class="w-full h-48 object-cover" />
 
-  <form method="POST" action="/albums/{{$.Album.ID}}/remove/{{.ID}}"
-        class="absolute top-2 right-2 hidden group-hover:block">
-    <button type="submit"
-            class="bg-red-600 hover:bg-red-500 text-white px-2 py-1 text-sm rounded shadow">
-      🗑
-    </button>
-  </form>
-</div>
-{{end}}
-  </div>
+		{{range .Images}}
+		<div class="relative group bg-gray-800 rounded-lg overflow-hidden shadow-md">
+			<img src="/uploads/optimized/{{.Filename}}.webp" class="w-full h-48 object-cover" />
+
+			<form method="POST" action="/albums/{{$.Album.ID}}/remove/{{.ID}}"
+				class="absolute top-2 right-2 hidden group-hover:block">
+				<button type="submit"
+					class="bg-red-600 hover:bg-red-500 text-white px-2 py-1 text-sm rounded shadow">
+					🗑
+				</button>
+			</form>
+		</div>
+		{{end}}
+	</div>
 </div>
 
 <!-- Модалка для выбора изображений -->
 <div id="addToAlbumModal" class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center hidden z-50">
-  <div class="bg-gray-900 p-6 rounded-lg w-full max-w-3xl">
-    <h2 class="text-xl font-bold mb-4 text-white">Select images to add</h2>
-    <form method="POST" action="/albums/{{.Album.ID}}/add" class="space-y-4">
-      <div class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-4 max-h-[60vh] overflow-y-auto">
-        {{range .UserImages}}
-        <label class="relative cursor-pointer">
-          <input type="checkbox" name="image_ids" value="{{.ID}}" class="absolute top-2 left-2 scale-150" />
-          <img src="/uploads/optimized/{{.Filename}}.webp" class="rounded-lg w-full h-36 object-cover" />
-        </label>
-        {{end}}
-      </div>
-      <div class="flex justify-end mt-4 gap-4">
-        <button type="button" onclick="document.getElementById('addToAlbumModal').classList.add('hidden')"
-                class="text-gray-400 hover:text-white">Cancel</button>
-        <button type="submit" class="bg-blue-600 hover:bg-blue-500 text-white font-semibold px-4 py-2 rounded">
-          Add Selected
-        </button>
-      </div>
-    </form>
-  </div>
+	<div class="bg-gray-900 p-6 rounded-lg w-full max-w-3xl">
+		<h2 class="text-xl font-bold mb-4 text-white">Select images to add</h2>
+		<form method="POST" action="/albums/{{.Album.ID}}/add" class="space-y-4">
+			<div class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-4 max-h-[60vh] overflow-y-auto">
+				{{range .UserImages}}
+				<label class="relative cursor-pointer">
+					<input type="checkbox" name="image_ids" value="{{.ID}}"
+						class="absolute top-2 left-2 scale-150" />
+					<img src="/uploads/optimized/{{.Filename}}.webp"
+						class="rounded-lg w-full h-36 object-cover" />
+				</label>
+				{{end}}
+			</div>
+			<div class="flex justify-end mt-4 gap-4">
+				<button type="button"
+					onclick="document.getElementById('addToAlbumModal').classList.add('hidden')"
+					class="text-gray-400 hover:text-white">Cancel</button>
+				<button type="submit"
+					class="bg-blue-600 hover:bg-blue-500 text-white font-semibold px-4 py-2 rounded">
+					Add Selected
+				</button>
+			</div>
+		</form>
+	</div>
 </div>
 {{end}}

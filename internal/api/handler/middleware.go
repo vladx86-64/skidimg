@@ -2,10 +2,13 @@ package handler
 
 import (
 	"context"
+	"errors"
 	"fmt"
+	"github.com/golang-jwt/jwt/v5"
 	"net/http"
 	"skidimg/internal/token"
 	"strings"
+	"time"
 )
 
 type authKey struct{}
@@ -15,21 +18,19 @@ type LayoutTemplateData struct {
 	IsAuthenticated bool
 	Username        string
 	Content         any
+	Title           string
 }
 
 func GetAuthMiddlewareFUnc(tokenMaker *token.JWTMaker) func(http.Handler) http.Handler {
 	return func(next http.Handler) http.Handler {
 		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 
-			// read authroization header
-			// verify the oken
 			claims, err := verifyClaimFromAutheader(r, tokenMaker)
 			if err != nil {
 				http.Error(w, fmt.Sprintf("error verifying token %v", err), http.StatusUnauthorized)
 				return
 			}
 
-			// pass the paylaod/claim down the context
 			ctx := context.WithValue(r.Context(), authKey{}, claims)
 			next.ServeHTTP(w, r.WithContext(ctx))
 		})
@@ -41,11 +42,11 @@ func InjectOptionalClaims(tokenMaker *token.JWTMaker) func(http.Handler) http.Ha
 		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 			claims, err := verifyClaimFromAutheader(r, tokenMaker)
 			if err == nil && claims != nil {
-				// если токен валидный — кладём в контекст
+
 				ctx := context.WithValue(r.Context(), authKey{}, claims)
 				r = r.WithContext(ctx)
 			}
-			// если токена нет — просто продолжаем без claims
+
 			next.ServeHTTP(w, r)
 		})
 	}
@@ -55,8 +56,6 @@ func GetAdminMiddlewareFunc(tokenMaker *token.JWTMaker) func(http.Handler) http.
 	return func(next http.Handler) http.Handler {
 		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 
-			// read authroization header
-			// verify the oken
 			claims, err := verifyClaimFromAutheader(r, tokenMaker)
 			if err != nil {
 				http.Error(w, fmt.Sprintf("error verifying token %v", err), http.StatusUnauthorized)
@@ -68,7 +67,6 @@ func GetAdminMiddlewareFunc(tokenMaker *token.JWTMaker) func(http.Handler) http.
 				return
 			}
 
-			// pass the paylaod/claim down the context
 			ctx := context.WithValue(r.Context(), authKey{}, claims)
 			next.ServeHTTP(w, r.WithContext(ctx))
 		})
@@ -78,7 +76,6 @@ func GetAdminMiddlewareFunc(tokenMaker *token.JWTMaker) func(http.Handler) http.
 func verifyClaimFromAutheader(r *http.Request, tokenMaker *token.JWTMaker) (*token.UserClaims, error) {
 	authHeader := r.Header.Get("Authorization")
 
-	// ✅ Если есть Bearer, используем его
 	if authHeader != "" {
 		fields := strings.Fields(authHeader)
 		if len(fields) == 2 && fields[0] == "Bearer" {
@@ -86,7 +83,6 @@ func verifyClaimFromAutheader(r *http.Request, tokenMaker *token.JWTMaker) (*tok
 		}
 	}
 
-	// ✅ Иначе — пытаемся вытащить access_token из cookie
 	cookie, err := r.Cookie("access_token")
 	if err == nil && cookie.Value != "" {
 		return tokenMaker.VerifyToken(cookie.Value)
@@ -108,6 +104,84 @@ func InjectLayoutTemplateData() func(http.Handler) http.Handler {
 			next.ServeHTTP(w, r.WithContext(ctx))
 		})
 	}
+}
+
+// GetAuthWithRefreshMiddleware — middleware, который:
+//  1. Проверяет access_token.
+//  2. Если он истёк (ErrTokenExpired), берёт refresh_token из cookie, верифицирует его,
+//     создаёт новый access_token и проставляет его в cookie.
+//  3. Кладёт claims в контекст и зовёт следующий handler.
+func GetAuthWithRefreshMiddleware(tokenMaker *token.JWTMaker) func(http.Handler) http.Handler {
+	return func(next http.Handler) http.Handler {
+		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+			raw := getBearerOrCookie(r, "access_token")
+
+			var claims *token.UserClaims
+			var err error
+
+			if raw == "" {
+
+				err = jwt.ErrTokenExpired
+			} else {
+				claims, err = tokenMaker.VerifyToken(raw)
+			}
+
+			if err != nil {
+				// 1) expired или не было токена — рефрешим
+				if errors.Is(err, jwt.ErrTokenExpired) {
+					rc, err2 := r.Cookie("refresh_token")
+					if err2 != nil {
+						http.Error(w, "нет access_token и нет refresh_token", http.StatusUnauthorized)
+						return
+					}
+					refreshClaims, err2 := tokenMaker.VerifyToken(rc.Value)
+					if err2 != nil {
+						http.Error(w, "invalid refresh token", http.StatusUnauthorized)
+						return
+					}
+					// TODO: проверить сессию в БД, что она не отозвана
+
+					newTok, newClaims, err2 := tokenMaker.CreateToken(
+						refreshClaims.ID, refreshClaims.Email, refreshClaims.IsAdmin, time.Minute*15,
+					)
+					if err2 != nil {
+						http.Error(w, "не удалось создать новый access token", http.StatusInternalServerError)
+						return
+					}
+
+					http.SetCookie(w, &http.Cookie{
+						Name:     "access_token",
+						Value:    newTok,
+						HttpOnly: true,
+						Path:     "/",
+						SameSite: http.SameSiteLaxMode,
+						Expires:  newClaims.ExpiresAt.Time,
+					})
+					claims = newClaims
+				} else {
+
+					http.Error(w, fmt.Sprintf("error verifying token: %v", err), http.StatusUnauthorized)
+					return
+				}
+			}
+
+			ctx := context.WithValue(r.Context(), authKey{}, claims)
+			next.ServeHTTP(w, r.WithContext(ctx))
+		})
+	}
+}
+
+func getBearerOrCookie(r *http.Request, cookieName string) string {
+	if h := r.Header.Get("Authorization"); h != "" {
+		parts := strings.Fields(h)
+		if len(parts) == 2 && parts[0] == "Bearer" {
+			return parts[1]
+		}
+	}
+	if c, err := r.Cookie(cookieName); err == nil {
+		return c.Value
+	}
+	return ""
 }
 
 // func verifyClaimFromAutheader(r *http.Request, tokenMaker *token.JWTMaker) (*token.UserClaims, error) {

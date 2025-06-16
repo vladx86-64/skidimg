@@ -1,28 +1,26 @@
-
 {{define "content"}}
 <div class="max-w-md w-full bg-gray-800 p-6 rounded-lg shadow-md">
-  <h2 class="text-2xl font-bold mb-4 text-white">👤 Профиль</h2>
+	<h2 class="text-2xl font-bold mb-4 text-white">👤 Профиль</h2>
 
-  <p class="text-gray-300 mb-2">
-    <!-- <span class="font-semibold">Имя пользователя:</span> {{.Username}} -->
-  </p>
+	<p class="text-gray-300 mb-2">
+		<!-- <span class="font-semibold">Имя пользователя:</span> {{.Username}} -->
+	</p>
 
-  <div class="mt-6 flex justify-between">
-    <form method="POST" action="/logout">
-      <button type="submit" class="bg-blue-600 hover:bg-blue-500 text-white font-semibold py-2 px-4 rounded">
-        Выйти
-      </button>
-    </form>
+	<div class="mt-6 flex justify-between">
+		<form method="POST" action="/logout">
+			<button type="submit"
+				class="bg-blue-600 hover:bg-blue-500 text-white font-semibold py-2 px-4 rounded">
+				Выйти
+			</button>
+		</form>
 
-    <form method="POST" action="/users">
-      <button
-        type="submit"
-        onclick="return confirm('Вы уверены, что хотите удалить аккаунт? Это действие необратимо.')"
-        class="bg-red-600 hover:bg-red-500 text-white font-semibold py-2 px-4 rounded"
-      >
-        Удалить аккаунт
-      </button>
-    </form>
-  </div>
+		<form method="POST" action="/users">
+			<button type="submit"
+				onclick="return confirm('Вы уверены, что хотите удалить аккаунт? Это действие необратимо.')"
+				class="bg-red-600 hover:bg-red-500 text-white font-semibold py-2 px-4 rounded">
+				Удалить аккаунт
+			</button>
+		</form>
+	</div>
 </div>
 {{end}}
