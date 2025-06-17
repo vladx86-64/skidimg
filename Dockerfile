@@ -1,4 +1,3 @@
-
 # Dockerfile for skidimg image hosting with bimg + libvips
 FROM golang:1.24.2
 
