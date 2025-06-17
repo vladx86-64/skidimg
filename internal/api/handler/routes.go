@@ -137,6 +137,9 @@ func RegisterRoutes(h *handler) *chi.Mux {
 	r.Group(func(r chi.Router) {
 		r.Use(InjectOptionalClaims(tm))
 		r.Use(InjectLayoutTemplateData())
+
+		r.Get("/", h.renderUploadPage)
+
 		r.Get("/upload", h.renderUploadPage)
 		r.Post("/upload", h.uploadImage)
 	})

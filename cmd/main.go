@@ -12,7 +12,11 @@ import (
 const minSKsize = 32
 
 func main() {
-	var secretKey = "01234567890123456789012345678901" // JWT Token
+	secretKey := os.Getenv("JWT_SECRET_KEY")
+	if secretKey == "" {
+		log.Println("[!] JWT_SECRET_KEY is not set!")
+		os.Exit(1)
+	}
 	os.MkdirAll("uploads/original", 0755)
 	os.MkdirAll("uploads/optimized", 0755)
 
@@ -21,7 +25,7 @@ func main() {
 		log.Fatalf("[!] Error opening database %v", err)
 	}
 	defer db.Close()
-	log.Printf("[+] Successfully connected ti database")
+	log.Printf("[+] Successfully connected to database")
 
 	stor := storage.NewStorage(db.GetDB())
 	serv := server.NewServer(stor)
