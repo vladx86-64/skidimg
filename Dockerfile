@@ -20,7 +20,7 @@ COPY . .
 RUN go build -o skidimg ./cmd/main.go
 
 # Expose the server port
-EXPOSE 1488
+EXPOSE 8080
 
 # Run the app
 CMD ["./skidimg"]

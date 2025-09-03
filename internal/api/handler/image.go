@@ -151,12 +151,17 @@ func (h *handler) viewImage(w http.ResponseWriter, r *http.Request) {
 	}
 
 	origPath := fmt.Sprintf("/uploads/original/%s%s", img.Filename, img.Ext)
+	compressedPath := fmt.Sprintf("/uploads/optimized/%s.webp", img.Filename)
 	layoutData := r.Context().Value(layoutKey{}).(LayoutTemplateData)
 
 	layoutData.Content = struct {
-		ImagePath string
+		ImagePath      string
+		OriginalPath   string
+		CompressedPath string
 	}{
-		ImagePath: origPath,
+		ImagePath:      origPath,
+		OriginalPath:   origPath,
+		CompressedPath: compressedPath,
 	}
 	layoutData.Title = "View Image"
 

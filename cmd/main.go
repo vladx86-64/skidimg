@@ -31,5 +31,5 @@ func main() {
 	serv := server.NewServer(stor)
 	hdlr := handler.NewHandler(serv, *&secretKey)
 	handler.RegisterRoutes(hdlr)
-	handler.Start(":1488")
+	handler.Start(":8080")
 }

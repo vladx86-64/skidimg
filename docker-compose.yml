@@ -1,4 +1,4 @@
-version: '3.8'
+# version: '3.8'
 
 services:
   db:
@@ -34,7 +34,7 @@ services:
     build: .
     container_name: skidimg-container
     ports:
-      - "1488:1488"
+      - "8080:8080"
     volumes:
       - ./uploads:/app/uploads
     environment:

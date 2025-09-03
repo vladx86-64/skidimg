@@ -2,5 +2,16 @@
 <div class="w-full max-w-2xl bg-gray-800 border border-gray-700 rounded-2xl shadow-xl p-8 text-center space-y-6">
 	<h1 class="text-3xl font-bold text-white">Your Image</h1>
 	<img src="{{.ImagePath}}" class="mx-auto rounded-lg border border-gray-700 max-w-full max-h-[80vh]" />
+
+	<div class="flex justify-center gap-4 mt-6">
+		<a href="{{.OriginalPath}}" download
+			class="px-4 py-2 bg-blue-600 hover:bg-blue-700 rounded-lg text-white font-semibold shadow">
+			Download Original
+		</a>
+		<a href="{{.CompressedPath}}" download
+			class="px-4 py-2 bg-green-600 hover:bg-green-700 rounded-lg text-white font-semibold shadow">
+			Download Compressed
+		</a>
+	</div>
 </div>
 {{end}}
