@@ -24,7 +24,7 @@ jobs:
       run: |
         ssh -i ~/.ssh/id_ed25519 deploy@${{ secrets.VPS_HOST }} << 'EOF'
           cd ~
-          if [ ! -d "skidimg"]; then
+          if [ ! -d "skidimg" ]; then
             git clone git@github.com:majortom69/skidimg.git skidimg
           fi
         
