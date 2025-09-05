@@ -379,6 +379,12 @@ func (h *handler) handleRegister(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	user, _ := h.server.GetUser(h.ctx, email)
+	if user != nil {
+		http.Error(w, "user already exits", http.StatusUnauthorized)
+		return
+	}
+
 	hashed, err := security.HashPassword(password)
 	if err != nil {
 		http.Error(w, "Error hashing password", http.StatusInternalServerError)

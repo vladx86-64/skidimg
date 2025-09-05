@@ -53,6 +53,7 @@ JWT_SECRET_KEY=your_jwt_secret
 docker-compose up --build
 ```
 
+
 На Windows
 ```sh
 docker-compose up --build
