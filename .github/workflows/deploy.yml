@@ -34,7 +34,9 @@ jobs:
           # Секреты через переменные GitHub Secrets
           echo "POSTGRES_PASSWORD=${{ secrets.POSTGRES_PASSWORD }}" > .env
           echo "JWT_SECRET_KEY=${{ secrets.JWT_SECRET_KEY }}" >> .env
+  
 
-          docker-compose pull || true
-          docker-compose up -d --build
+          docker compose pull || true
+          docker compose up -d --build
+          docker compose ps
         EOF
