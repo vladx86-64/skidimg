@@ -200,12 +200,33 @@ func (h *handler) loginUser(w http.ResponseWriter, r *http.Request) {
 }
 
 func (h *handler) logoutUser(w http.ResponseWriter, r *http.Request) {
-	claims := r.Context().Value(authKey{}).(*token.UserClaims)
-
-	err := h.server.DeleteSession(h.ctx, claims.RegisteredClaims.ID)
-	if err != nil {
-		http.Error(w, "Error deleting session", http.StatusInternalServerError)
+	if r.Method != http.MethodPost {
+		http.Error(w, "method not allowed", http.StatusMethodNotAllowed)
 		return
+	}
+
+	// 1) Достаём refresh_token из cookie
+	rc, err := r.Cookie("refresh_token")
+	if err == nil && rc.Value != "" {
+		// 2) Парсим refresh и берём его jti (он же ID сессии)
+		refreshClaims, err := h.TokenMaker.VerifyToken(rc.Value)
+		if err == nil {
+			// 3) Пытаемся удалить сессию по jti рефреша
+			_ = h.server.DeleteSession(r.Context(), refreshClaims.RegisteredClaims.ID)
+		}
+	}
+
+	// 4) Чистим оба cookie — идемпотентно
+	for _, name := range []string{"access_token", "refresh_token"} {
+		http.SetCookie(w, &http.Cookie{
+			Name:     name,
+			Value:    "",
+			Path:     "/",
+			MaxAge:   -1, // удалить
+			HttpOnly: true,
+			Secure:   true, // включите в проде за HTTPS
+			SameSite: http.SameSiteLaxMode,
+		})
 	}
 
 	w.WriteHeader(http.StatusNoContent)
