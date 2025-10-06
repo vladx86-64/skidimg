@@ -1,16 +1,18 @@
 # version: '3.8'
 
 services:
+ services:
   db:
-    image: postgres
+    image: postgres:18
     container_name: skidimg-postgres
     environment:
       POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
       POSTGRES_DB: skidimg
+      PGDATA: /var/lib/postgresql/18/docker
     ports:
       - "5433:5432"
     volumes:
-      - skidimg_db:/var/lib/postgresql/data
+      - skidimg_db:/var/lib/postgresql
 
   migrate:
     image: migrate/migrate
