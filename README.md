@@ -50,3 +50,10 @@ JWT_SECRET_KEY=your_jwt_secret
 ```sh
 docker-compose up --build
 ```
+
+## Скриншоты
+<img width="1153" height="824" alt="image" src="https://github.com/user-attachments/assets/ef24e240-d33e-4d3f-ae57-81d67ed726ee" />
+<img width="1361" height="857" alt="image" src="https://github.com/user-attachments/assets/12816abf-25d6-40a1-a4ac-17aad5102405" />
+<img width="1364" height="859" alt="image" src="https://github.com/user-attachments/assets/f72c2e29-79f8-42db-bb23-1316f7b20a1e" />
+
+
