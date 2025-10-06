@@ -10,7 +10,7 @@
 
 ## Стек
 
-- **Язык**: Go
+- **Языки**: Go
 - **Роутинг**: [chi](https://github.com/go-chi/chi)
 - **Обработка изображений**: [bimg](https://github.com/h2non/bimg) (на осове libvips)
 - **База данных**: PosgreSQL
@@ -26,17 +26,16 @@
 
 ## 🔗 Демо-ссылка
 
+62.182.192.227:8080/
+
 http://img.downgrad.com/
 
 ---
 
 ## Требования для запуска
 
-- Go 1.18+ (рекомендуется 1.22+)
-- PostgreSQL
-- Docker + Docker Compose
-- libvips 8.3+ (рекомендуется  8.8+)
-- C-компилятор (к примеру gcc 4.6+ or clang 3.0+) для bimg
+- Docker
+- Docker Compose
 
 ---
 
@@ -48,13 +47,6 @@ POSTGRES_PASSWORD=your_postgres_password
 JWT_SECRET_KEY=your_jwt_secret
 ``` 
 Запуск через Docker Compose 
-На Linux(затестированно на Ubuntu 22.04)
-```sh
-docker-compose up --build
-```
-
-
-На Windows
 ```sh
 docker-compose up --build
 ```
